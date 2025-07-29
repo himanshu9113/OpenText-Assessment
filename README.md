@@ -54,7 +54,7 @@ pip install -r requirements.txt
 ### 1. Run Task 1 Test Cases
 ```bash
 pytest tests/test_signUp_page_installer.py
-pytest tests/test_install_application.py
+python tests/test_install_application.py # the application installer automation
 ```
 
 ### 2. Test Case List (Task 1)
