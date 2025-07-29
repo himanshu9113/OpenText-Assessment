@@ -1,54 +1,80 @@
-from pywinauto.application import Application
 import time
-import subprocess
+from pywinauto import Application, timings
+from pywinauto.findwindows import ElementNotFoundError
 import os
-from pywinauto import Desktop
+import subprocess
 
-# Path to your installer
-installer_path = os.path.abspath("installer/Carbonite-personal-client.exe")
 
-# Use PowerShell to run the installer with elevated privileges
-# command = f'powershell Start-Process "{installer_path}" -Verb RunAs'
-# subprocess.call(command, shell=True)
-# Launch the installer with elevation
-subprocess.Popen([
-    "powershell", 
-    "Start-Process", 
-    f'"{installer_path}"', 
-    "-Verb", 
-    "RunAs"
-], shell=True)
+# --- Configuration ---
+# Path to Carbonite installer executable
+INSTALLER_PATH = os.path.abspath("installer/Carbonite-personal-client.exe")
+INSTALLER_WINDOW_TITLE = "Installing Carbonite" 
+# Timeout for finding window
+TIMEOUT = 30
 
-# Wait for the window to appear
-time.sleep(20)  # Increase if needed
 
-# # Launch installer and Connect to the window
-# app = Application(backend="win32").connect(path="Carbonite-personal-client.exe")
-# dlg = app.window(title_re=".*Setup.*")
-for w in Desktop(backend="uia").windows():
-    print(w.window_text())
+def automate_carbonite_installation():
+   
+   print(f"Starting Carbonite installer: {INSTALLER_PATH}")
 
-# command = f'powershell Start-Process "{installer_path}" -Verb RunAs'
-# subprocess.call(command, shell=True)
-#app = Application(backend="uia").start(installer_path)
 
-# dlg = Desktop(backend='uia').ProgramManager
-# dlg.wait('visible')
-app = Application(backend="uia").connect(path=installer_path)
-# dlg = app.top_window()
-# dlg.wait('visible', timeout=15)
-# print("Installer window found.")
+   try:
+       # Start the application
+       # If UAC prompt appears, you will need to manually click 'Yes'.
+       proc = subprocess.Popen(f'"{INSTALLER_PATH}"', shell=True)
+       time.sleep(5)
 
-# Wait until the window is ready
-# dlg.wait('visible', timeout=2)
+       app = Application(backend="uia").start(INSTALLER_PATH)
+       print("Application started. Waiting for installer window...")
 
-# Example installation steps (may vary depending on installer)
-#dlg.print_control_identifiers()
-# time.sleep(1)
-# dlg.Agree.click_input()
-# time.sleep(1)
-# dlg.Install.click_input()
-# dlg.Finish.wait('visible', timeout=60)
-# dlg.Finish.click_input()
 
-print("✅ Installation completed successfully.")
+       # Connect to the installer window
+       timings.wait_until_passes(TIMEOUT, 1, lambda: app.window(title_re=INSTALLER_WINDOW_TITLE).exists())
+       main_window = app.window(title_re=INSTALLER_WINDOW_TITLE)
+       main_window.wait('ready', timeout=TIMEOUT)
+       print(f"Connected to installer window: '{main_window.window_text()}'")
+
+       try:
+           
+           agree_checkbox = main_window.child_window(title = "I agree", control_type="CheckBox")
+           agree_checkbox.click()
+           continue_button = main_window.child_window(title="Continue", control_type="Button")
+           print("Found 'Continue' button. Clicking it...")
+           continue_button.click()
+           print("'Continue' button clicked.")
+           time.sleep(2) # Give some time for the next screen to load
+       except ElementNotFoundError:
+           print("Warning: 'Continue' button not found. Assuming it's not present or already clicked.")
+
+
+       # Find and click the 'Next' button
+       try:
+           timings.wait_until_passes(TIMEOUT, 1, lambda: main_window.child_window(title_re=INSTALLER_WINDOW_TITLE, control_type="Button").exists())
+           next_button = main_window.child_window(title="Next", control_type="Button")
+           print("Found 'Next' button. Clicking it...")
+           next_button.click()
+           print("'Next' button clicked.")
+           time.sleep(5) # Give time for the installer to close
+       except ElementNotFoundError:
+           print("Error: 'Next' button not found. The installation might not have completed as expected.")
+
+
+       print("Automation complete. Verifying application closure...")
+       # Check if the application process is still running
+       try:
+           app.kill()
+           print("Installer process terminated.")
+       except Exception as e:
+           print(f"Could not kill installer process (it might have already closed): {e}")
+
+
+   except ElementNotFoundError as e:
+       print(f"Error: Could not find a required UI element. Please check window titles and control identifiers. Details: {e}")
+       print("Tip: Use 'pywinauto.inspect.exe' to inspect the application's UI elements.")
+   except Exception as e:
+       print(f"An unexpected error occurred: {e}")
+
+
+if __name__ == "__main__":
+   automate_carbonite_installation()
+

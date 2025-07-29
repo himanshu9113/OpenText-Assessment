@@ -25,7 +25,7 @@ Task 2: Flexible date formatting utility using Python
 │   ├── fixture.py
 ├── requirements.txt
 ├── pytest.ini
-├── TestCase.xlsx
+├── Test_Scenarios_Task1.xlsx
 └── README.md
 ```
 
@@ -79,8 +79,8 @@ pytest tests/test_install_application.py
 
 #### 3.2 Windows Installer Automation
 - Fails without admin rights due to CreateProcess elevation.
-- If GUI windows don’t load or run silently in the background, Pywinauto can’t hook into them.
 - Need admin permissions and a visible GUI process to automate reliably.
+- Ciurrently tried to automate with the best of my knowledge but it's not working due to elevation and process not found.
 
 ##  Task 2: Flexible Date Formatter
 - Description
